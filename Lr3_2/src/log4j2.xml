@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="warn">
+    <Appenders>
+        <Console name="LogToConsole" target="SYSTEM_OUT">
+            <PatternLayout pattern="%d{HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n"/>
+        </Console>
+
+        <File name="LogToFile1" fileName="logs/app1.log" append="false">
+            <PatternLayout>
+                <Pattern>%-1p %d{yyyy-MM-dd HH:mm:ss} %c{1}:%L - %m%n</Pattern>
+            </PatternLayout>
+        </File>
+
+        <File name="LogToFile2" fileName="logs/app2.log" append="false">
+            <PatternLayout>
+                <Pattern>%-1p %d{yyyy-MM-dd HH:mm:ss} %c{1}:%L - %m%n</Pattern>
+            </PatternLayout>
+        </File>
+
+    </Appenders>
+    <Loggers>
+        <!-- avoid duplicated logs with additivity=false -->
+        <Logger name="com.company.Tasks" level="debug" additivity="false">
+            <AppenderRef ref="LogToFile1" level="debug"/>
+            <AppenderRef ref="LogToFile2" level="warn"/>
+            <AppenderRef ref="LogToConsole"/>
+        </Logger>
+        <Root level="error">
+
+        </Root>
+    </Loggers>
+</Configuration>
