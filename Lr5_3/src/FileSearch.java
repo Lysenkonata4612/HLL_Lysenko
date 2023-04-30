@@ -1,7 +1,7 @@
 import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
-
+import java.lang.System;
 public class FileSearch {
     /**
      * Главный метод программы.
@@ -10,57 +10,56 @@ public class FileSearch {
      * отдельный поток, который ищет вхождения строки в файле.
      * По завершении всех потоков выводит на экран информацию о найденных вхождениях.
      */
-   public static void main(String[] args) throws InterruptedException {
 
-       // Проверяем наличие аргументов командной строки
-       if (args.length < 1)
-       {
-            System.out.println("Usage: FileSearch <substring>");
-            System.exit(1);
-       }
+    public static void main(String[] args) throws InterruptedException {
 
-       // Получаем подстроку для поиска
-       String substring = args[0];
-       // Получаем список файлов в текущей директории
-       File currentDir = new File(".");
-       File[] files = currentDir.listFiles();
-       List<String> fileNames = new ArrayList<>();
+        File currentDir = new File(".");
+        File[] files = currentDir.listFiles();
+        List<String> fileNames = new ArrayList<>();
 
-       // Фильтруем и добавляем только текстовые файлы
-       for (File file : files) {
-           if (file.isFile() && file.getName().endsWith(".txt")) {
+        // Фильтруем и добавляем только текстовые файлы
+        for (File file : files) {
+            if (file.isFile() && file.getName().endsWith(".txt")) {
                 fileNames.add(file.getName());
-           }
-       }
-       // Выводим список доступных файлов
-       System.out.println("Available files: " + fileNames);
-       // Создаем очередь для хранения результатов поиска и список потоков
-       BlockingQueue<SearchResult> results = new LinkedBlockingQueue<>();
-       List<Thread> threads = new ArrayList<>();
-       // Создаем поток для каждого файла и запускаем его
-       for (String name : fileNames) {
-           Thread thread = new Thread(new FileSearcher(substring, name, results));
-           thread.start();
-           threads.add(thread);
-       }
-       // Ожидаем завершения всех потоков
-       for (Thread thread : threads) {
+            }
+        }
+        Scanner scan = new Scanner(System.in);
+        System.out.println("Введите искомую подстроку:");
+        String substring = scan.nextLine();
+
+        // Выводим список доступных файлов
+        System.out.println("Available files: " + fileNames);
+        // Создаем очередь для хранения результатов поиска и список потоков
+        BlockingQueue<SearchResult> results = new LinkedBlockingQueue<>();
+        List<Thread> threads = new ArrayList<>();
+
+        // Создаем поток для каждого файла и запускаем его
+        for (String name : fileNames) {
+            Thread thread = new Thread(new FileSearcher(substring, name, results));
+            thread.start();
+            threads.add(thread);
+        }
+
+        // Поток для чтения списка с результатами и вывода их на экран
+        Thread outputThread = new Thread(() -> {
+            try {
+                while (!Thread.interrupted())
+                {
+                    SearchResult result = results.take();
+                    System.out.printf("Found '%s' in file '%s' at line %d, position %d\n",
+                            result.substring, result.fileName, result.lineNumber, result.index);
+               }
+            } catch (InterruptedException ignored) {}
+        });
+        outputThread.start();
+        Thread.sleep(1000);
+        outputThread.interrupt();
+        // Ожидаем завершения всех потоков
+        for (Thread thread : threads) {
             thread.join();
-       }
+        }
+    }
 
-       // Проверяем, были ли найдены результаты поиска
-       if (results.isEmpty()) {
-           System.out.println("No matches found");
-       } else {
-           // Выводим все результаты
-           while (!results.isEmpty()) {
-
-               SearchResult result = results.poll();
-                   System.out.printf("Found '%s' in file '%s' at line %d, position %d\n",
-                           substring, result.fileName, result.lineNumber, result.index);
-           }
-       }
-   }
     /**
      * Класс для поиска вхождений строки в файле в отдельном потоке.
      */
@@ -75,7 +74,7 @@ public class FileSearch {
          * @param fileName  имя файла, в котором нужно искать.
          * @param results   очередь для хранения результатов поиска.
          */
-        public FileSearcher( String substring, String fileName, BlockingQueue<SearchResult> results) {
+        public FileSearcher(String substring, String fileName, BlockingQueue<SearchResult> results) {
             this.substring = substring;
             this.fileName = fileName;
             this.results = results;
@@ -110,11 +109,11 @@ public class FileSearch {
      */
     private static class SearchResult {
 
-        private String substring;
-        private String fileName;
+        private final String substring;
+        private final String fileName;
 
-        private int index;
-        private int lineNumber;
+        private final int index;
+        private final int lineNumber;
 
         /**
          *Создает новый объект SearchResult с заданными параметрами.
