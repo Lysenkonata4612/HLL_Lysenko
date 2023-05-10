@@ -3,3 +3,4 @@ apple
 cucumber
 grape
 pear
+apple
